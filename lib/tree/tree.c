@@ -5,7 +5,7 @@ typedef struct node Node;
 
 struct node {
   int key;
-  int height;
+  int height; 
   String family;
   Vector words;
   Node *left;
@@ -35,8 +35,8 @@ FTNode tree_insert(FTNode hNode, int key, String family, String word) {
   } else if(key > node->key){
     node->right = tree_insert(node->right, key, family, word);
   } else {
-    vector_push(node->words, word);
-    string_free(&family);
+    vector_push(node->words, word);    
+    string_free(&family); // Pointer to (String family) no longer needed.
   }
 
   node->height = 1 + max(tree_height(node->left), tree_height(node->right));
@@ -45,8 +45,8 @@ FTNode tree_insert(FTNode hNode, int key, String family, String word) {
 }
 
 Vector tree_getWords(FTNode hNode) {
-  Node *node = (Node *) hNode;
-  return node->words;
+  Node *node = (Node *) hNode;  
+  return (vector_getSize(node->words)) ? node->words : NULL;
 }
 
 String tree_getFamily(FTNode hNode) {
@@ -97,8 +97,6 @@ void tree_free_(FTNode hNode) {
   vector_free(&root->words);
   free(root);
 }
-
-
 
 
 

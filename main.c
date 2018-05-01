@@ -9,24 +9,27 @@ int getChar();
 void kflush();
 
 FTNode buildFamilyTree(Vector wordChoices, String currentFamily, char guess);
+
 String wordToFamily(String currentFamily, String word, char guess);
 int familyToKey(String word);
 
 Boolean isGameWin(String currentFamily);
 
+// Traversal iterator
 void treePrint(int key, String family, Vector words) {
   printf("%-4d | %s : %d\n", key, string_c(family), vector_getSize(words));
 }
 
 
+
 int main(int argc, char const *argv[]) {
-  system("clear"); // Clear screen
+  system("clear");
   printf("\tHANGMAN\n\n");
 
   // Read dictionary and build data structure
   Vector dictionary[30] = { 0 };  
   String tmpStr = string_init_default();  
-  FILE *fp = fopen("dictionary.txt", "r");  
+  FILE *fp = fopen("dictionary.txt", "r"); 
 
   if(tmpStr == NULL) return 1;
   if(fp == NULL) return 1;
@@ -38,12 +41,13 @@ int main(int argc, char const *argv[]) {
     // printf("Read string: %s\n", string_c(tmpStr));
     vector_push(dictionary[string_get_size(tmpStr)], (Item) string_init(string_c(tmpStr)));
   }
+
   fclose(fp);
 
 
 
   // Game init  
-    printf("How long of a word? (2 - 29)? : ");
+    printf("How long of a word? (2 - 29) : ");
   int wordLength = getLength(dictionary);
 
     printf("How many guesses? : ");
@@ -61,39 +65,45 @@ int main(int argc, char const *argv[]) {
   while(1) {
     tree_free(&tree);    
 
-      printf("\n-----------------------\nEnter guess: ");
-    char guess = getChar();
-
-    system("clear"); // Clear screen
+      printf("\nEnter guess: ");
+    char guess = getChar();    
 
     if(string_contains(guessList, guess)) {
       printf("\nYou already guessed '%c'.\n", guess);
       continue;
     }
     
+    system("clear");
+
+    // Build Family tree    
+    tree = buildFamilyTree(wordChoices, currentFamily, guess);
+
     // Build guess list
     (!string_isEmpty(guessListFull)) ? string_push(guessListFull, ','), string_push(guessListFull, ' ') : 0; // Add comma
 
     string_push(guessList, guess);    
     string_push(guessListFull, guess);    
-    
-    // Build Family tree    
-    tree = buildFamilyTree(wordChoices, currentFamily, guess);
 
     // Print 
     printf("\nPossible word families:\n");
     tree_inorder(tree, &treePrint);
 
     FTNode max = tree_getMaxWords(tree);
-    vector_overwrite(wordChoices, tree_getWords(max));
-    string_overwrite(currentFamily, tree_getFamily(max));
 
-    if(string_contains(currentFamily, guess)) {
-      printf("\nCorrect.\n");
-    } else {      
+    if(!max) {
       printf("\nWrong.\n");
-      guesses--;
-    }
+      guesses--;      
+    } else {
+      vector_overwrite(wordChoices, tree_getWords(max));
+      string_overwrite(currentFamily, tree_getFamily(max));
+
+      if(string_contains(currentFamily, guess)) {
+        printf("\nCorrect.\n");
+      } else {      
+        printf("\nWrong.\n");
+        guesses--;
+      }
+    }    
 
     if(!guesses) {
       printf("You're out of guesses. Try again.\n");
@@ -117,8 +127,8 @@ int main(int argc, char const *argv[]) {
   string_free(&tmpStr);
   vector_free(&wordChoices);
 
-  for(int l = 0; l < 30; l++) {
-    // printf("freeing words length: %u. From: %u\n", l, dictionary[l]);
+  // Free dictionary
+  for(int l = 0; l < 30; l++) { 
     if(!dictionary[l]) continue;
     for(int s = 0; s < vector_getSize(dictionary[l]); s++) {      
       String str = (String) vector_getData(dictionary[l], s);
@@ -135,6 +145,9 @@ FTNode buildFamilyTree(Vector wordChoices, String currentFamily, char guess) {
   for(int i = 0; i < vector_getSize(wordChoices); i++) {
     String word = vector_getData(wordChoices, i);
     String family = wordToFamily(currentFamily, word, guess);
+
+    if(!family) continue;
+
     int key = familyToKey(family);
 
     // printf("Key: %d. Word: %s. Family: %s\n", key, string_c(word), string_c(family));
@@ -155,24 +168,21 @@ int familyToKey(String word) {
 }
 
 
-String wordToFamily(String currentFamily, String word, char guess) {  
+String wordToFamily(String hCurrentFamily, String hWord, char guess) {  
   String family = string_init_default();
-  char *wordc = string_c(word);
-  char *currentFamilyc = string_c(currentFamily);
+  char *word = string_c(hWord);
+  char *cFamily = string_c(hCurrentFamily);  
 
-  for(; *wordc; wordc++) {
+  for(; *word; word++, (*cFamily) ? cFamily++ : 0) {
     char next = '-';
 
-    if(guess == *wordc) next = guess;
-    if(*currentFamilyc && *currentFamilyc != '-') {
-      next = *currentFamilyc;
-      currentFamilyc++;
-    }
+    if(guess == *word) next = guess;
+    if(*cFamily && *cFamily != '-') next = *cFamily;    
 
     string_push(family, next);
   }
 
-  // printf("wordToFamily (%s, %s, %c) : %s\n", string_c(currentFamily), string_c(word), guess, string_c(family));
+  // printf("wordToFamily (%s, %s, %c) : %s\n", string_c(hCurrentFamily), string_c(word), guess, string_c(family));
   return family;
 }
 
